@@ -21,7 +21,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies.scoped-mutex-traits]
-version = "0.999"
+version = "1.0"
 path = "../scoped-mutex-traits"
 
 [dependencies.critical-section]

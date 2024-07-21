@@ -1,6 +1,6 @@
 [package]
 name = "scoped-mutex-traits"
-version = "0.999.0"
+version = "1.0.0"
 authors = [
     "James Munns <james@onevariable.com>",
     "Eliza Weisman <eliza@elizas.website>",
