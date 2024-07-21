@@ -7,7 +7,7 @@ authors = [
 ]
 edition = "2021"
 readme = "../../README.md"
-repository = "https://github.com/tosc-os/scoped-mutex"
+repository = "https://github.com/tosc-rs/scoped-mutex"
 description = "An abstraction over closure-based mutexes"
 license = "MIT OR Apache-2.0"
 categories = [
