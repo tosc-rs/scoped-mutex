@@ -43,7 +43,7 @@ pub mod cs {
     unsafe impl ScopedRawMutex for CriticalSectionRawMutex {
         #[inline]
         #[must_use]
-        fn try_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
+        fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
             critical_section::with(|_| {
                 // NOTE: separated load/stores are acceptable as we are in
                 // a critical section
@@ -58,11 +58,11 @@ pub mod cs {
         }
 
         #[inline]
-        fn lock<R>(&self, f: impl FnOnce() -> R) -> R {
+        fn with_lock<R>(&self, f: impl FnOnce() -> R) -> R {
             // In a critical section, it is not possible for another holder
             // of this mutex to release, which means we have certainly
             // reached deadlock if the lock was already locked.
-            self.try_lock(f).expect("Deadlocked")
+            self.try_with_lock(f).expect("Deadlocked")
         }
     }
 }
@@ -101,7 +101,7 @@ pub mod local {
     unsafe impl ScopedRawMutex for LocalRawMutex {
         #[inline]
         #[must_use]
-        fn try_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
+        fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
             // NOTE: separated load/stores are acceptable as we are !Send and !Sync,
             // meaning that we can only be accessed within a single thread
             if self.taken.load(Ordering::Relaxed) {
@@ -114,19 +114,19 @@ pub mod local {
         }
 
         #[inline]
-        fn lock<R>(&self, f: impl FnOnce() -> R) -> R {
+        fn with_lock<R>(&self, f: impl FnOnce() -> R) -> R {
             // In a local-only mutex, it is not possible for another holder
             // of this mutex to release, which means we have certainly
             // reached deadlock if the lock was already locked.
-            self.try_lock(f).expect("Deadlocked")
+            self.try_with_lock(f).expect("Deadlocked")
         }
     }
 }
 
 // ================
 
-#[cfg(any(cortex_m, feature = "std"))]
-pub mod thread_mode {
+#[cfg(all(feature = "impl-unsafe-cortex-m-thread-mode", cortex_m))]
+pub mod single_core_thread_mode {
     use super::*;
 
     /// A "mutex" that only allows borrowing from thread mode.

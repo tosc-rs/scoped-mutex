@@ -33,7 +33,7 @@ pub unsafe trait ScopedRawMutex {
     /// If this was successful, `Some(R)` will be returned. If the mutex was already locked,
     /// `None` will be returned
     #[must_use]
-    fn try_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R>;
+    fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R>;
 
     /// Lock this `ScopedRawMutex`, calling `f()` after the lock has been acquired, and releasing
     /// the lock after the completion of `f()`.
@@ -45,7 +45,7 @@ pub unsafe trait ScopedRawMutex {
     ///
     /// For implementations where a single thread is present, panicking immediately may be
     /// the correct choice.
-    fn lock<R>(&self, f: impl FnOnce() -> R) -> R;
+    fn with_lock<R>(&self, f: impl FnOnce() -> R) -> R;
 }
 
 /// Blocking mutex (not async)
@@ -93,8 +93,8 @@ impl<R: ScopedRawMutex, T> BlockingMutex<R, T> {
     /// Behavior when the lock is already locked is dependent on the behavior
     /// of the Raw mutex. See [`ScopedRawMutex::lock()`]'s documentation for
     /// more details
-    pub fn lock<U>(&self, f: impl FnOnce(&mut T) -> U) -> U {
-        self.raw.lock(|| {
+    pub fn with_lock<U>(&self, f: impl FnOnce(&mut T) -> U) -> U {
+        self.raw.with_lock(|| {
             let ptr = self.data.get();
             // SAFETY: Raw Mutex proves we have exclusive access to the inner data
             let inner = unsafe { &mut *ptr };
@@ -107,8 +107,8 @@ impl<R: ScopedRawMutex, T> BlockingMutex<R, T> {
     /// Returns `Some(U)` if the lock was obtained. Returns `None` if the lock
     /// was already locked
     #[must_use]
-    pub fn try_lock<U>(&self, f: impl FnOnce(&mut T) -> U) -> Option<U> {
-        self.raw.try_lock(|| {
+    pub fn try_with_lock<U>(&self, f: impl FnOnce(&mut T) -> U) -> Option<U> {
+        self.raw.try_with_lock(|| {
             let ptr = self.data.get();
             // SAFETY: Raw Mutex proves we have exclusive access to the inner data
             let inner = unsafe { &mut *ptr };
