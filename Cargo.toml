@@ -3,5 +3,4 @@ resolver = "2"
 members = [
     "source/scoped-mutex",
     "source/scoped-mutex-traits",
-    "source/scoped-mutex-impls",
 ]
