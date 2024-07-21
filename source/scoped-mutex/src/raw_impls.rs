@@ -13,6 +13,7 @@ use scoped_mutex_traits::{ConstInit, ScopedRawMutex};
 
 #[cfg(feature = "impl-critical-section")]
 pub mod cs {
+    //! Critical Section based implementation
 
     use super::*;
 
@@ -74,6 +75,7 @@ pub mod cs {
 // ================
 
 pub mod local {
+    //! Locally usable based implementation
     use super::*;
 
     /// A mutex that allows borrowing data in local context.
@@ -135,6 +137,8 @@ pub mod local {
 
 #[cfg(all(feature = "impl-unsafe-cortex-m-single-core", cortex_m))]
 pub mod single_core_thread_mode {
+    //! A single-core safe implementation that does not require a critical section
+
     use super::*;
 
     /// A "mutex" that only allows borrowing from thread mode.
