@@ -1,10 +1,24 @@
 [package]
 name = "scoped-mutex"
 version = "0.1.0"
-edition = "2021"
+description = "An abstraction over closure-based mutexes"
+categories = [
+    "embedded",
+    "no-std",
+]
+documentation = "https://docs.rs/scoped-mutex/"
+authors.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies.scoped-mutex-traits]
-version = "0.1"
+version = "1.0"
 path = "../scoped-mutex-traits"
 
 [dependencies.critical-section]

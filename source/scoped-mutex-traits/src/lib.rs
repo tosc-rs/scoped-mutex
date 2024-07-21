@@ -1,5 +1,19 @@
+//! Scoped Mutex Traits
+//!
+//! This crate provides traits that are aimed at compatibility for scoped mutexes.
+//!
+//! Compared to the more general traits provided by the [`lock_api`] crate, these traits
+//! are aimed at being more compatible with implementations based on critical sections,
+//! are easier to work with in a nested or strictly LIFO pattern.
+//!
+//! [`lock_api`]: https://docs.rs/lock_api/
+#![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+/// Const Init Trait
+///
+/// This trait is intended for use when implementers of [`ScopedRawMutex`] that can
+/// be constructed in const context, e.g. for placing in a `static`
 pub trait ConstInit {
     /// Create a new instance.
     ///
