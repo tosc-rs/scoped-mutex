@@ -177,7 +177,8 @@ pub mod thread_mode {
             // In a thread-mode only mutex, it is not possible for another holder
             // of this mutex to release, which means we have certainly
             // reached deadlock if the lock was already locked.
-            self.try_lock(f).expect("Deadlocked")
+            self.try_lock(f)
+                .expect("Deadlocked or attempted to access outside of thread mode")
         }
     }
 
