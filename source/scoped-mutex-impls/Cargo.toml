@@ -1,0 +1,19 @@
+[package]
+name = "scoped-mutex-impls"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.scoped-mutex-traits]
+version = "0.1"
+path = "../scoped-mutex-traits"
+
+[dependencies]
+critical-section = { version = "1.1", optional = true }
+
+[features]
+default = [
+    "impl-critical-section",
+]
+impl-critical-section = ["dep:critical-section"]
+impl-unsafe-cortex-m-single-core = []
+std = []
