@@ -4,3 +4,13 @@ members = [
     "source/scoped-mutex",
     "source/scoped-mutex-traits",
 ]
+
+[workspace.package]
+edition = "2021"
+authors = [
+    "James Munns <james@onevariable.com>",
+    "Eliza Weisman <eliza@elizas.website>",
+]
+readme = "./README.md"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/tosc-rs/scoped-mutex"
