@@ -17,4 +17,3 @@ documentation = "https://docs.rs/scoped-mutex-traits/"
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
-

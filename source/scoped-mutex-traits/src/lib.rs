@@ -9,6 +9,7 @@
 //! [`lock_api`]: https://docs.rs/lock_api/
 #![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 
 /// Const Init Trait
 ///
@@ -60,5 +61,39 @@ pub unsafe trait ScopedRawMutex {
     fn with_lock<R>(&self, f: impl FnOnce() -> R) -> R;
 
     /// Is this mutex currently locked?
+    fn is_locked(&self) -> bool;
+}
+
+/// Raw RAII mutex trait.
+///
+/// # Safety
+///
+/// Implementations of this trait must ensure that the mutex is actually
+/// exclusive: a lock can't be acquired while the mutex is already locked.
+pub unsafe trait RawMutex {
+    /// Marker type which determines whether a lock guard should be [`Send`].
+    type GuardMarker;
+
+    /// Acquires this mutex, blocking the current thread/CPU core until it is
+    /// able to do so.
+    fn lock(&self);
+
+    /// Attempts to acquire this mutex without blocking. Returns `true`
+    /// if the lock was successfully acquired and `false` otherwise.
+    fn try_lock(&self) -> bool;
+
+    /// Unlocks this mutex.
+    ///
+    /// # Safety
+    ///
+    /// This method may only be called if the mutex is held in the current
+    /// context, i.e. it must be paired with a successful call to [`lock`] or
+    /// [`try_lock`].
+    ///
+    /// [`lock`]: RawMutex::lock
+    /// [`try_lock`]: RawMutex::try_lock
+    unsafe fn unlock(&self);
+
+    /// Returns `true` if the mutex is currently locked.
     fn is_locked(&self) -> bool;
 }
