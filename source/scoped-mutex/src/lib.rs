@@ -1,10 +1,11 @@
 //! Scoped Mutex Crate
 #![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 
 pub mod raw_impls;
 
-pub use mutex_traits::{ConstInit, ScopedRawMutex};
+pub use mutex_traits::{ConstInit, ScopedRawMutex, RawMutex};
 use core::cell::UnsafeCell;
 
 /// Blocking mutex (not async)
