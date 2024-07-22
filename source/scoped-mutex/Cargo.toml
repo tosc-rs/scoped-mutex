@@ -1,12 +1,12 @@
 [package]
-name = "scoped-mutex"
+name = "mutex"
 version = "0.1.0"
 description = "An abstraction over closure-based mutexes"
 categories = [
     "embedded",
     "no-std",
 ]
-documentation = "https://docs.rs/scoped-mutex/"
+documentation = "https://docs.rs/mutex/"
 authors.workspace = true
 edition.workspace = true
 readme.workspace = true
@@ -17,8 +17,8 @@ repository.workspace = true
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
-[dependencies.scoped-mutex-traits]
-version = "1.0"
+[dependencies.mutex-traits]
+version = "0.999.0"
 path = "../scoped-mutex-traits"
 
 [dependencies.critical-section]

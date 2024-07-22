@@ -9,7 +9,7 @@
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use scoped_mutex_traits::{ConstInit, ScopedRawMutex};
+use mutex_traits::{ConstInit, ScopedRawMutex};
 
 #[cfg(feature = "impl-critical-section")]
 pub mod cs {

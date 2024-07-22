@@ -4,7 +4,7 @@
 
 pub mod raw_impls;
 
-pub use scoped_mutex_traits::{ConstInit, ScopedRawMutex};
+pub use mutex_traits::{ConstInit, ScopedRawMutex};
 use core::cell::UnsafeCell;
 
 /// Blocking mutex (not async)

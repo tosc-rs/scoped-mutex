@@ -9,13 +9,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7059fff8937831a9ae6f0fe4d658ffabf58f2ca96aa9dec1c889f936f705f216"
 
 [[package]]
-name = "scoped-mutex"
+name = "mutex"
 version = "0.1.0"
 dependencies = [
  "critical-section",
- "scoped-mutex-traits",
+ "mutex-traits",
 ]
 
 [[package]]
-name = "scoped-mutex-traits"
-version = "1.0.0"
+name = "mutex-traits"
+version = "0.999.0"
