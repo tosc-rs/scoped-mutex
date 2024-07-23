@@ -22,7 +22,7 @@ pub trait ConstInit {
     const INIT: Self;
 }
 
-/// Raw mutex trait.
+/// Raw scoped mutex trait.
 ///
 /// This mutex is "raw", which means it does not actually contain the protected data, it
 /// just implements the mutex mechanism. For most uses you should use `BlockingMutex`
@@ -64,12 +64,47 @@ pub unsafe trait ScopedRawMutex {
     fn is_locked(&self) -> bool;
 }
 
-/// Raw RAII mutex trait.
+/// Raw mutex trait.
+///
+/// This trait represents an implementation of a generic mutual-exclusion lock
+/// which may be locked and unlocked freely at any time.
+///
+/// This mutex is "raw", which means it does not actually contain the protected
+/// data, it just implements the mutex mechanism. For most uses you should use
+/// `BlockingMutex`  from the `mutex` crate instead, which is generic over a
+/// `RawMutex` and contains the protected data.
+///
+/// # `RawMutex` and [`ScopedRawMutex`]
+///
+/// The `RawMutex` trait is a superset of the [`ScopedRawMutex`] trait. The
+/// interface defined in [`ScopedRawMutex`] is more restrictive, and only
+/// permits the mutex to be locked for the duration of a single [`FnOnce`] call
+/// and unlocked immediately when that closure exits. `RawMutex`, on the other
+/// hand, permits a much wider range of potential usage patterns: it may be used
+/// to implement a RAII-style lock guard like [`std::sync::Mutex`][s], a
+/// "C-style" mutex where explicit `lock` and `unlock` calls have to be paired
+/// manually,[^1] *or* a scoped closure-based API like [`ScopedRawMutex`].
+/// Therefore, **there is [a blanket implementation][blanket] of
+/// [`ScopedRawMutex`] for all types that implement `RawMutex`**.
+///
+/// Some mutex implementations may not be able to implement the full `RawMutex`
+/// trait, and may only be able to implement the closure-based
+/// [`ScopedRawMutex`] subset. For example, implementations for the
+/// [`critical-section`] crate (in [`mutex::raw_impls::cs`][cs]) can only
+/// implement the `ScopedRawMutex` trait. However, in general, **mutex
+/// implementations that *can* implement the more general `RawMutex` trait
+/// should prefer to do so**, as they will be able to be used in code that
+/// requires either interface.
 ///
 /// # Safety
 ///
 /// Implementations of this trait must ensure that the mutex is actually
 /// exclusive: a lock can't be acquired while the mutex is already locked.
+///
+/// [blanket]: ScopedRawMutex#impl-ScopedRawMutex-for-M
+/// [s]: https://doc.rust-lang.org/stable/std/sync/struct.Mutex.html
+/// [cs]: https://docs.rs/mutex/latest/mutex/raw_impls/cs/index.html
+/// [critical-section]: https://docs.rs/critical-section/latest/critical_section/
 pub unsafe trait RawMutex {
     /// Marker type which determines whether a lock guard should be [`Send`].
     type GuardMarker;
