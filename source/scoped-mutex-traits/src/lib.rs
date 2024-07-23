@@ -97,3 +97,49 @@ pub unsafe trait RawMutex {
     /// Returns `true` if the mutex is currently locked.
     fn is_locked(&self) -> bool;
 }
+
+unsafe impl<M: RawMutex> ScopedRawMutex for M {
+    #[must_use]
+    fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
+        if self.try_lock() {
+            // Using a drop guard ensures that the mutex is unlocked when this
+            // function exits, even if `f()` panics.
+            let _unlock = Unlock(self);
+            Some(f())
+        } else {
+            None
+        }
+    }
+
+    fn with_lock<R>(&self, f: impl FnOnce() -> R) -> R {
+        self.lock();
+        // Using a drop guard ensures that the mutex is unlocked when this
+        // function exits, even if `f()` panics.
+        let _unlock = Unlock(self);
+        f()
+    }
+
+    /// Is this mutex currently locked?
+    fn is_locked(&self) -> bool {
+        RawMutex::is_locked(self)
+    }
+
+}
+
+/// Implementation detail of the `ScopedRawMutex` implementation for `RawMutex`.
+/// This is a drop guard that unlocks the `RawMutex` when it's dropped. This is
+/// used to ensure that the `RawMutex` is always unlocked when the
+/// `ScopedRawMutex::with_lock` or `ScopedRawMutex::try_with_lock` closures are
+/// exited, even if they are exited by a panic rather than by a normal return.
+struct Unlock<'mutex, M: RawMutex>(&'mutex M);
+
+impl<M: RawMutex> Drop for Unlock<'_, M> {
+    fn drop(&mut self) {
+        unsafe {
+            // Safety: Constructing an `Unlock` is only safe if the mutex has
+            // been locked. Callers are responsible for ensuring this invariant;
+            // since this struct is only constructed in this module, we do so.
+            self.0.unlock()
+        }
+    }
+}
