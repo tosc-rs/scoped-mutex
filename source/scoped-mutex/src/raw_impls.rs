@@ -1,8 +1,10 @@
 //! Mutex primitives.
 //!
-//! This module provides impls of the [`ScopedRawMutex`] trait
+//! This module provides impls of the [`ScopedRawMutex`] and [`RawMutex`]
+//! traits.
 //!
 //! [`ScopedRawMutex`]: crate::ScopedRawMutex
+//! [`RawMutex`]: crate::RawMutex
 #![allow(clippy::new_without_default)]
 #![allow(clippy::declare_interior_mutable_const)]
 
@@ -216,5 +218,50 @@ pub mod single_core_thread_mode {
     fn in_thread_mode() -> bool {
         // ICSR.VECTACTIVE == 0
         return unsafe { (0xE000ED04 as *const u32).read_volatile() } & 0x1FF == 0;
+    }
+}
+
+#[cfg(feature = "impl-lock_api-0_4")]
+pub mod lock_api_0_4 {
+    //! [`lock_api`](https://crates.io/crates/lock_api) v0.4 [`RawMutex`]
+    //! implementation.
+
+    use ::lock_api_0_4 as lock_api;
+    use mutex_traits::{ConstInit, RawMutex};
+
+    /// [`lock_api`](https://crates.io/crates/lock_api) v0.4 [`RawMutex`]
+    /// implementation.
+    pub struct LockApiRawMutex<T>(T);
+
+    impl<T: lock_api::RawMutex> ConstInit for LockApiRawMutex<T> {
+        const INIT: Self = LockApiRawMutex(T::INIT);
+    }
+
+    unsafe impl<T: lock_api::RawMutex> RawMutex for LockApiRawMutex<T> {
+        type GuardMarker = <T as lock_api::RawMutex>::GuardMarker;
+
+        #[inline]
+        #[track_caller]
+        fn lock(&self) {
+            self.0.lock();
+        }
+
+        #[inline]
+        #[track_caller]
+        fn try_lock(&self) -> bool {
+            self.0.try_lock()
+        }
+
+        #[inline]
+        #[track_caller]
+        unsafe fn unlock(&self) {
+            self.0.unlock()
+        }
+
+        #[inline]
+        #[track_caller]
+        fn is_locked(&self) -> bool {
+            self.0.is_locked()
+        }
     }
 }

@@ -4,7 +4,10 @@ When a mutex and a closure love each other very much.
 
 ## Provenance
 
-This crate is a fork of portions of the `embassy-sync` crate.
+Portions of this code are forked from the `embassy-sync` crate.
+
+The `RawMutex` trait is adapted from the trait of the same name in the
+`lock_api` crate, by Amanieu d'Antras.
 
 ## License
 
