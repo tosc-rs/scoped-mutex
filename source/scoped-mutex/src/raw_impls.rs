@@ -229,6 +229,8 @@ pub mod lock_api_0_4 {
     use ::lock_api_0_4 as lock_api;
     use mutex_traits::{ConstInit, RawMutex};
 
+    /// [`lock_api`](https://crates.io/crates/lock_api) v0.4 [`RawMutex`]
+    /// implementation.
     pub struct LockApiRawMutex<T>(T);
 
     impl<T: lock_api::RawMutex> ConstInit for LockApiRawMutex<T> {

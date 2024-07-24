@@ -32,7 +32,7 @@ pub use mutex_traits::{ConstInit, RawMutex, ScopedRawMutex};
 /// [`LocalRawMutex`]: crate::raw_impls::local::LocalRawMutex
 /// [`ThreadModeRawMutex`]:
 ///     crate::raw_impls::single_core_thread_mode::ThreadModeRawMutex
-/// [`LockApiRawMutex`]: crate::raw_impls::lock_api::LockApiRawMutex
+/// [`LockApiRawMutex`]: crate::raw_impls::lock_api_0_4::LockApiRawMutex
 /// [`lock_api::RawMutex`]:
 ///     https://docs.rs/lock_api/0.4.0/lock_api/trait.RawMutex.html
 pub struct BlockingMutex<R, T: ?Sized> {
