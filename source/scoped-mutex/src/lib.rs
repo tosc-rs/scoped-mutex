@@ -6,9 +6,9 @@
 pub mod raw_impls;
 
 use core::cell::UnsafeCell;
-use core::ops::{Deref, DerefMut};
 use core::marker::PhantomData;
-pub use mutex_traits::{ConstInit, ScopedRawMutex, RawMutex};
+use core::ops::{Deref, DerefMut};
+pub use mutex_traits::{ConstInit, RawMutex, ScopedRawMutex};
 
 /// Blocking mutex (not async)
 ///
@@ -216,7 +216,6 @@ impl<R: RawMutex, T: ?Sized> Deref for MutexGuard<'_, R, T> {
         }
     }
 }
-
 
 impl<R: RawMutex, T: ?Sized> DerefMut for MutexGuard<'_, R, T> {
     #[inline]

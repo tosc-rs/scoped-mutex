@@ -173,7 +173,7 @@ pub mod single_core_thread_mode {
     unsafe impl ScopedRawMutex for ThreadModeRawMutex {
         #[inline]
         #[must_use]
-        fn try_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
+        fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
             if !in_thread_mode() {
                 return None;
             }
@@ -187,7 +187,7 @@ pub mod single_core_thread_mode {
         }
 
         #[inline]
-        fn lock<R>(&self, f: impl FnOnce() -> R) -> R {
+        fn with_lock<R>(&self, f: impl FnOnce() -> R) -> R {
             // In a thread-mode only mutex, it is not possible for another holder
             // of this mutex to release, which means we have certainly
             // reached deadlock if the lock was already locked.
@@ -215,7 +215,7 @@ pub mod single_core_thread_mode {
         }
     }
 
-    pub fn in_thread_mode() -> bool {
+    fn in_thread_mode() -> bool {
         // ICSR.VECTACTIVE == 0
         return unsafe { (0xE000ED04 as *const u32).read_volatile() } & 0x1FF == 0;
     }
@@ -227,7 +227,7 @@ pub mod lock_api_0_4 {
     //! implementation.
 
     use ::lock_api_0_4 as lock_api;
-    use scoped_mutex_traits::{RawMutex, ConstInit};
+    use scoped_mutex_traits::{ConstInit, RawMutex};
 
     pub struct LockApiRawMutex<T>(T);
 

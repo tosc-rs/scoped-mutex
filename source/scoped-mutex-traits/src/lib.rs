@@ -158,7 +158,6 @@ unsafe impl<M: RawMutex> ScopedRawMutex for M {
     fn is_locked(&self) -> bool {
         RawMutex::is_locked(self)
     }
-
 }
 
 /// Implementation detail of the `ScopedRawMutex` implementation for `RawMutex`.

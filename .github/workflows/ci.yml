@@ -1,0 +1,87 @@
+on:
+    pull_request:
+    workflow_dispatch:
+    push:
+      branches: ["main"]
+
+name: CI
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            override: true
+      - uses: olix0r/cargo-action-fmt/setup@v2
+      - uses: actions/checkout@v2
+      - name: cargo clippy
+        run: cargo clippy -q --message-format=json | cargo-action-fmt
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            override: true
+      - name: cargo test
+        run: cargo test --all
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+
+  rustdoc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - uses: olix0r/cargo-action-fmt/setup@v2
+      - uses: actions/checkout@v2
+      - name: cargo doc
+        run: |
+          cargo doc \
+            --all \
+            --all-features \
+            --quiet \
+            --message-format=json \
+            | cargo-action-fmt
+        env:
+          # Explicitly enable the cortex-m config so that cortex-m-only code
+          # gets documented.
+          RUSTDOCFLAGS: "--cfg docsrs --cfg cortex_m -D warnings"
+
+  # "Good to merge" job that depends on all required checks.
+  #
+  # This is so that we can just make GitHub require this to merge, and the list
+  # of required checks can be declared here, rather than in the UI.
+  all-systems-go:
+    name: "all systems go!"
+    runs-on: ubuntu-latest
+    needs:
+      - rustfmt
+      - rustdoc
+      - clippy
+      - test
+    steps:
+      - run: exit 0
