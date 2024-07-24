@@ -83,7 +83,7 @@ pub unsafe trait ScopedRawMutex {
 /// hand, permits a much wider range of potential usage patterns: it may be used
 /// to implement a RAII-style lock guard like [`std::sync::Mutex`][s], a
 /// "C-style" mutex where explicit `lock` and `unlock` calls have to be paired
-/// manually,[^1] *or* a scoped closure-based API like [`ScopedRawMutex`].
+/// manually, *or* a scoped closure-based API like [`ScopedRawMutex`].
 /// Therefore, **there is [a blanket implementation][blanket] of
 /// [`ScopedRawMutex`] for all types that implement `RawMutex`**.
 ///
