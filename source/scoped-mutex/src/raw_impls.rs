@@ -218,4 +218,3 @@ pub mod single_core_thread_mode {
         return unsafe { (0xE000ED04 as *const u32).read_volatile() } & 0x1FF == 0;
     }
 }
-
