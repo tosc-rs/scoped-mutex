@@ -221,7 +221,7 @@ pub mod single_core_thread_mode {
     }
 }
 
-#[cfg(feature = "impl-lock_api-0-4")]
+#[cfg(feature = "impl-lock_api-0_4")]
 pub mod lock_api_0_4 {
     //! [`lock_api`](https://crates.io/crates/lock_api) v0.4 [`RawMutex`]
     //! implementation.
