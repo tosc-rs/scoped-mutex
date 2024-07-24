@@ -135,6 +135,8 @@ pub unsafe trait RawMutex {
 
 unsafe impl<M: RawMutex> ScopedRawMutex for M {
     #[must_use]
+    #[inline]
+    #[track_caller]
     fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
         if self.try_lock() {
             // Using a drop guard ensures that the mutex is unlocked when this
@@ -146,6 +148,8 @@ unsafe impl<M: RawMutex> ScopedRawMutex for M {
         }
     }
 
+    #[inline]
+    #[track_caller]
     fn with_lock<R>(&self, f: impl FnOnce() -> R) -> R {
         self.lock();
         // Using a drop guard ensures that the mutex is unlocked when this
@@ -155,6 +159,7 @@ unsafe impl<M: RawMutex> ScopedRawMutex for M {
     }
 
     /// Is this mutex currently locked?
+    #[inline]
     fn is_locked(&self) -> bool {
         RawMutex::is_locked(self)
     }
