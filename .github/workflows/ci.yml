@@ -59,7 +59,13 @@ jobs:
       - uses: olix0r/cargo-action-fmt/setup@v2
       - uses: actions/checkout@v2
       - name: cargo doc
-        run: cargo doc --all -q --message-format=json | cargo-action-fmt
+        run: |
+          cargo doc \
+            --all \
+            --all-features \
+            --quiet \
+            --message-format=json \
+            | cargo-action-fmt
         env:
           RUSTDOCFLAGS: "--cfg docsrs -D warnings"
 
