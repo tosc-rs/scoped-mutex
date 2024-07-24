@@ -38,4 +38,8 @@ default = [
 impl-critical-section = ["dep:critical-section"]
 impl-unsafe-cortex-m-single-core = []
 impl-lock_api-0_4 = ["dep:lock_api-0_4"]
+# Enables `fmt::Debug` and `fmt::Display` implementations.
+#
+# These can be disabled when minimizing binary size is important.
+fmt = []
 std = []
