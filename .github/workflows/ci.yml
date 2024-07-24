@@ -67,7 +67,9 @@ jobs:
             --message-format=json \
             | cargo-action-fmt
         env:
-          RUSTDOCFLAGS: "--cfg docsrs -D warnings"
+          # Explicitly enable the cortex-m config so that cortex-m-only code
+          # gets documented.
+          RUSTDOCFLAGS: "--cfg docsrs --cfg cortex_m -D warnings"
 
   # "Good to merge" job that depends on all required checks.
   #
