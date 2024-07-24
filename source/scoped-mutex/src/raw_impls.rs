@@ -227,7 +227,7 @@ pub mod lock_api_0_4 {
     //! implementation.
 
     use ::lock_api_0_4 as lock_api;
-    use scoped_mutex_traits::{ConstInit, RawMutex};
+    use mutex_traits::{ConstInit, RawMutex};
 
     pub struct LockApiRawMutex<T>(T);
 
