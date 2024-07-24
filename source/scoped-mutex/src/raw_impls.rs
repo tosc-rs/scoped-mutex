@@ -24,6 +24,7 @@ pub mod cs {
     /// # Safety
     ///
     /// This mutex is safe to share between different executors and interrupts.
+    #[cfg_attr(feature = "fmt", derive(Debug))]
     pub struct CriticalSectionRawMutex {
         taken: AtomicBool,
     }
@@ -84,6 +85,7 @@ pub mod local {
     ///
     /// This acts similar to a RefCell, with scoped access patterns, though
     /// without being able to borrow the data twice.
+    #[cfg_attr(feature = "fmt", derive(Debug))]
     pub struct LocalRawMutex {
         taken: AtomicBool,
         /// Prevent this from being sync or send
@@ -150,6 +152,7 @@ pub mod single_core_thread_mode {
     /// **This Mutex is only safe on single-core systems.**
     ///
     /// On multi-core systems, a `ThreadModeRawMutex` **is not sufficient** to ensure exclusive access.
+    #[cfg_attr(feature = "fmt", derive(Debug))]
     pub struct ThreadModeRawMutex {
         taken: AtomicBool,
     }
@@ -231,6 +234,7 @@ pub mod lock_api_0_4 {
 
     /// [`lock_api`](https://crates.io/crates/lock_api) v0.4 [`RawMutex`]
     /// implementation.
+    #[cfg_attr(feature = "fmt", derive(Debug))]
     pub struct LockApiRawMutex<T>(T);
 
     impl<T: lock_api::RawMutex> ConstInit for LockApiRawMutex<T> {

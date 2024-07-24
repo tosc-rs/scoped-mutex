@@ -2,6 +2,7 @@
 #![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
+#![cfg_attr(feature = "fmt", warn(missing_debug_implementations))]
 
 pub mod raw_impls;
 
@@ -65,7 +66,7 @@ impl<R: ConstInit, T> BlockingMutex<R, T> {
     }
 }
 
-impl<R: ScopedRawMutex, T> BlockingMutex<R, T> {
+impl<R: ScopedRawMutex, T: ?Sized> BlockingMutex<R, T> {
     /// Locks the raw mutex and grants temporary access to the inner data
     ///
     /// Behavior when the lock is already locked is dependent on the behavior
@@ -179,6 +180,21 @@ impl<R, T> BlockingMutex<R, T> {
     }
 }
 
+#[cfg(feature = "fmt")]
+impl<R, T> core::fmt::Debug for BlockingMutex<R, T>
+where
+    R: ScopedRawMutex + core::fmt::Debug,
+    T: ?Sized + core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let mut s = f.debug_struct("BlockingMutex");
+        s.field("raw", &self.raw);
+
+        self.try_with_lock(|data| s.field("data", &data).finish())
+            .unwrap_or_else(|| s.field("data", &format_args!("<locked>")).finish())
+    }
+}
+
 // === impl MutexGuard ===
 
 impl<R: RawMutex, T: ?Sized> Drop for MutexGuard<'_, R, T> {
@@ -257,4 +273,26 @@ where
     // This is just required by the bounds on the declaration of `MutexGuard`:
     R: RawMutex,
 {
+}
+
+#[cfg(feature = "fmt")]
+impl<R, T> core::fmt::Debug for MutexGuard<'_, R, T>
+where
+    T: ?Sized + core::fmt::Debug,
+    R: RawMutex,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Debug::fmt(&self.data, f)
+    }
+}
+
+#[cfg(feature = "fmt")]
+impl<R, T> core::fmt::Display for MutexGuard<'_, R, T>
+where
+    T: ?Sized + core::fmt::Display,
+    R: RawMutex,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Display::fmt(&self.data, f)
+    }
 }
