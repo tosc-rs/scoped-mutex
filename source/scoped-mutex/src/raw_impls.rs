@@ -235,8 +235,8 @@ pub mod lock_api_0_4 {
         const INIT: Self = LockApiRawMutex(T::INIT);
     }
 
-    unsafe impl<T: lock_api::RawMutex> RawMutex for LockApiRawMutex<T> {;
-        type GuardMarker = <T as lock_api::RawMutex>
+    unsafe impl<T: lock_api::RawMutex> RawMutex for LockApiRawMutex<T> {
+        type GuardMarker = <T as lock_api::RawMutex>::GuardMarker;
 
         #[inline]
         #[track_caller]
