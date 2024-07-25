@@ -19,7 +19,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies.mutex-traits]
 version = "0.999.0"
-path = "../scoped-mutex-traits"
+path = "../mutex-traits"
 
 [dependencies.critical-section]
 version = "1.1"
