@@ -1,12 +1,4 @@
-//! Scoped Mutex Traits
-//!
-//! This crate provides traits that are aimed at compatibility for scoped mutexes.
-//!
-//! Compared to the more general traits provided by the [`lock_api`] crate, these traits
-//! are aimed at being more compatible with implementations based on critical sections,
-//! are easier to work with in a nested or strictly LIFO pattern.
-//!
-//! [`lock_api`]: https://docs.rs/lock_api/
+#![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]

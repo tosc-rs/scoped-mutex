@@ -9,7 +9,7 @@ categories = [
 documentation = "https://docs.rs/mutex/"
 authors.workspace = true
 edition.workspace = true
-readme.workspace = true
+readme = "README.md"
 license.workspace = true
 repository.workspace = true
 
