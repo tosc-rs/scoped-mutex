@@ -269,3 +269,53 @@ pub mod lock_api_0_4 {
         }
     }
 }
+
+#[cfg(feature = "std")]
+pub mod std {
+    //! Std implementation of the [RawMutex] trait
+    //!
+    //! Currently based on [`parking_lot::RawMutex], but subject to change
+
+    use parking_lot::{lock_api::RawMutex as _, RawMutex as PLRawMutex};
+    use mutex_traits::{ConstInit, RawMutex};
+
+    /// Std implementation of the [RawMutex] trait
+    ///
+    /// Currently based on [`parking_lot::RawMutex], but subject to change
+    #[cfg_attr(feature = "fmt", derive(Debug))]
+    pub struct StdRawMutex {
+        inner: PLRawMutex,
+    }
+
+    impl ConstInit for StdRawMutex {
+        const INIT: Self = StdRawMutex { inner: PLRawMutex::INIT };
+    }
+
+    unsafe impl RawMutex for StdRawMutex {
+        type GuardMarker = ();
+
+        #[inline]
+        #[track_caller]
+        fn lock(&self) {
+            self.inner.lock();
+        }
+
+        #[inline]
+        #[track_caller]
+        fn try_lock(&self) -> bool {
+            self.inner.try_lock()
+        }
+
+        #[inline]
+        #[track_caller]
+        unsafe fn unlock(&self) {
+            self.inner.unlock()
+        }
+
+        #[inline]
+        #[track_caller]
+        fn is_locked(&self) -> bool {
+            self.inner.is_locked()
+        }
+    }
+}
