@@ -276,8 +276,8 @@ pub mod std {
     //!
     //! Currently based on [`parking_lot::RawMutex], but subject to change
 
-    use parking_lot::{lock_api::RawMutex as _, RawMutex as PLRawMutex};
     use mutex_traits::{ConstInit, RawMutex};
+    use parking_lot::{lock_api::RawMutex as _, RawMutex as PLRawMutex};
 
     /// Std implementation of the [RawMutex] trait
     ///
@@ -288,7 +288,9 @@ pub mod std {
     }
 
     impl ConstInit for StdRawMutex {
-        const INIT: Self = StdRawMutex { inner: PLRawMutex::INIT };
+        const INIT: Self = StdRawMutex {
+            inner: PLRawMutex::INIT,
+        };
     }
 
     unsafe impl RawMutex for StdRawMutex {
