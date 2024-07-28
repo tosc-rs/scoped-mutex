@@ -269,3 +269,79 @@ pub mod lock_api_0_4 {
         }
     }
 }
+
+#[cfg(feature = "std")]
+pub mod std {
+    //! TODO
+
+    use mutex_traits::RawMutex;
+    use core::{ptr::null_mut, sync::atomic::{AtomicPtr, Ordering}};
+    use std::sync::{Mutex, MutexGuard};
+
+    /// TODO
+    #[cfg_attr(feature = "fmt", derive(Debug))]
+    pub struct StdRawMutex {
+        // NOTE: We Box the mutex to ensure that even if we move `StdRawMutex` the
+        // MutexGuard (which points to the Mutex as a reference!) pointer is never
+        // invalidated
+        mtx: Box<Mutex<()>>,
+        guard: AtomicPtr<MutexGuard<'static, ()>>,
+    }
+
+    impl Drop for StdRawMutex {
+        fn drop(&mut self) {
+            // If we hold a guard, drop it. We can't race with anyone trying
+            // to unlock because we hold an exclusive mut ref
+            if self.is_locked() {
+                unsafe { self.unlock() }
+            }
+        }
+    }
+
+    impl StdRawMutex {
+        fn register_guard(&self, guard: MutexGuard<'_, ()>) {
+            let guard: &mut MutexGuard<'_, ()> = Box::leak(Box::new(guard));
+            let guard: *mut MutexGuard<'_, ()> = guard;
+            let guard: *mut MutexGuard<'static, ()> = guard.cast();
+            let old = self.guard.swap(guard, Ordering::AcqRel);
+            assert_eq!(old, null_mut());
+        }
+    }
+
+    unsafe impl RawMutex for StdRawMutex {
+        type GuardMarker = ();
+
+        #[inline]
+        #[track_caller]
+        fn lock(&self) {
+            let guard = self.mtx.lock().unwrap();
+            self.register_guard(guard);
+        }
+
+        #[inline]
+        #[track_caller]
+        fn try_lock(&self) -> bool {
+            match self.mtx.try_lock() {
+                Ok(g) => {
+                    self.register_guard(g);
+                    true
+                },
+                Err(_) => false,
+            }
+        }
+
+        #[inline]
+        #[track_caller]
+        unsafe fn unlock(&self) {
+            let guard = self.guard.swap(null_mut(), Ordering::AcqRel);
+            assert_ne!(guard, null_mut());
+            let _ = Box::from_raw(guard);
+        }
+
+        #[inline]
+        #[track_caller]
+        fn is_locked(&self) -> bool {
+            !self.guard.load(Ordering::Acquire).is_null()
+        }
+    }
+}
