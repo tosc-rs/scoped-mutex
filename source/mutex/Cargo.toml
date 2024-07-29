@@ -28,8 +28,13 @@ optional = true
 [dependencies.lock_api-0_4]
 package = "lock_api"
 version = "0.4"
-default_features = false
+default-features = false
 optional = true
+
+[dependencies.parking_lot]
+version = "0.12.3"
+optional = true
+default-features = false
 
 [features]
 default = [
@@ -42,4 +47,6 @@ impl-lock_api-0_4 = ["dep:lock_api-0_4"]
 #
 # These can be disabled when minimizing binary size is important.
 fmt = []
-std = []
+std = [
+    "dep:parking_lot",
+]
