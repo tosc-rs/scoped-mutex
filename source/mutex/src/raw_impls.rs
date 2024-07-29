@@ -294,7 +294,7 @@ pub mod std {
     }
 
     unsafe impl RawMutex for StdRawMutex {
-        type GuardMarker = ();
+        type GuardMarker = <parking_lot::RawMutex as lock_api::RawMutex>::GuardMarker;
 
         #[inline]
         #[track_caller]
