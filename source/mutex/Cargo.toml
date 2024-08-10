@@ -28,7 +28,7 @@ optional = true
 [dependencies.lock_api-0_4]
 package = "lock_api"
 version = "0.4"
-default_features = false
+default-features = false
 optional = true
 
 [features]
