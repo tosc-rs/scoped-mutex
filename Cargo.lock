@@ -35,7 +35,7 @@ dependencies = [
 
 [[package]]
 name = "mutex-traits"
-version = "0.999.0"
+version = "1.0.0"
 
 [[package]]
 name = "scopeguard"
