@@ -9,6 +9,7 @@ pub mod raw_impls;
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
+use core::panic::AssertUnwindSafe;
 pub use mutex_traits::{ConstInit, RawMutex, ScopedRawMutex};
 
 /// Blocking mutex (not async)
@@ -55,6 +56,32 @@ pub struct MutexGuard<'mutex, R: RawMutex, T: ?Sized> {
 unsafe impl<R: ScopedRawMutex + Send, T: ?Sized + Send> Send for BlockingMutex<R, T> {}
 unsafe impl<R: ScopedRawMutex + Sync, T: ?Sized + Send> Sync for BlockingMutex<R, T> {}
 
+#[cfg(feature = "std")]
+#[inline(always)]
+fn catch_unwind<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
+    f: F,
+) -> Result<R, Box<dyn std::any::Any + Send>> {
+    std::panic::catch_unwind(f)
+}
+
+#[cfg(not(feature = "std"))]
+#[inline(always)]
+fn catch_unwind<F: FnOnce() -> R, R>(f: F) -> Result<R, ()> {
+    Ok(f())
+}
+
+#[cfg(feature = "std")]
+#[inline(always)]
+fn resume_unwind(payload: Box<dyn std::any::Any + Send>) -> ! {
+    std::panic::resume_unwind(payload)
+}
+
+#[cfg(not(feature = "std"))]
+#[inline(always)]
+fn resume_unwind(_payload: ()) -> ! {
+    unreachable!()
+}
+
 impl<R: ConstInit, T> BlockingMutex<R, T> {
     /// Creates a new mutex in an unlocked state ready for use.
     #[inline]
@@ -73,12 +100,16 @@ impl<R: ScopedRawMutex, T: ?Sized> BlockingMutex<R, T> {
     /// of the Raw mutex. See [`ScopedRawMutex::with_lock()`]'s documentation for
     /// more details
     pub fn with_lock<U>(&self, f: impl FnOnce(&mut T) -> U) -> U {
-        self.raw.with_lock(|| {
+        let res = self.raw.with_lock(|| {
             let ptr = self.data.get();
             // SAFETY: Raw Mutex proves we have exclusive access to the inner data
             let inner = unsafe { &mut *ptr };
-            f(inner)
-        })
+            catch_unwind(AssertUnwindSafe(|| f(inner)))
+        });
+        match res {
+            Ok(g) => g,
+            Err(b) => resume_unwind(b),
+        }
     }
 
     /// Locks the raw mutex and grants temporary access to the inner data
