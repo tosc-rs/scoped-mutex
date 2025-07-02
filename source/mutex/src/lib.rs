@@ -66,7 +66,7 @@ fn catch_unwind<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
 
 #[cfg(not(feature = "std"))]
 #[inline(always)]
-fn catch_unwind<F: FnOnce() -> R, R>(f: F) -> Result<R, ()> {
+fn catch_unwind<F: FnOnce() -> R, R>(f: F) -> Result<R, core::convert::Infallible> {
     Ok(f())
 }
 
@@ -78,7 +78,7 @@ fn resume_unwind(payload: Box<dyn std::any::Any + Send>) -> ! {
 
 #[cfg(not(feature = "std"))]
 #[inline(always)]
-fn resume_unwind(_payload: ()) -> ! {
+fn resume_unwind(_payload: core::convert::Infallible) -> ! {
     unreachable!()
 }
 
