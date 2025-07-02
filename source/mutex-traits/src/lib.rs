@@ -126,7 +126,6 @@ pub unsafe trait RawMutex {
 }
 
 unsafe impl<M: RawMutex> ScopedRawMutex for M {
-    #[must_use]
     #[inline]
     #[track_caller]
     fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
