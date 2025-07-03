@@ -30,8 +30,14 @@ jobs:
         with:
             toolchain: stable
             override: true
-      - name: cargo test
+
+      # Test with default features
+      - name: cargo test (default)
         run: cargo test --all
+
+      # Some behavior is std-feature specific, test with that feature active
+      - name: cargo test (std)
+        run: cargo test --all --features=std
 
   rustfmt:
     runs-on: ubuntu-latest

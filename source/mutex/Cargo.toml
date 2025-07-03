@@ -42,4 +42,8 @@ impl-lock_api-0_4 = ["dep:lock_api-0_4"]
 #
 # These can be disabled when minimizing binary size is important.
 fmt = []
-std = []
+# Enables unlock-on-unwind for BlockingMutex, also enables the std feature
+# of the `critical-section` crate
+std = [
+    "critical-section?/std",
+]
