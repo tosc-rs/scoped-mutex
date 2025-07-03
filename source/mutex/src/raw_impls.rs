@@ -57,10 +57,10 @@
 //!
 //! This impl requires the `impl-critical-section` feature to be active, and requires that a
 //! `critical-section` implementation has been provided. If both the `std` and `impl-critical-section`
-//! features of this crate, the `critical-section/std` feature is enabled, fulfilling this requirement
-//! on std targets. For embedded targets, `critical-section` impls are usually provided by your
-//! architecture crate (e.g. `cortex-m` for single core targets) or HAL crate (e.g. `embassy-rp`
-//! for multi-core targets).
+//! features of this crate are active, the `critical-section/std` feature is enabled, fulfilling this
+//! requirement on std targets. For embedded targets, `critical-section` impls are usually provided
+//! by your architecture crate (e.g. `cortex-m`) for single core targets or HAL crate
+//! (e.g. `embassy-rp`) for multi-core targets.
 //!
 //! ### `lock_api_0_4`
 //!
