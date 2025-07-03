@@ -85,14 +85,6 @@ fn catch_unwind<F: FnOnce() -> R, R>(f: F) -> Result<R, core::convert::Infallibl
     Ok(f())
 }
 
-/// A wrapper function for std::panic::resume_unwind. Exists so we can stub it out
-/// on non-std targets
-#[cfg(feature = "std")]
-#[inline(always)]
-fn resume_unwind(payload: Box<dyn std::any::Any + Send>) -> ! {
-    std::panic::resume_unwind(payload)
-}
-
 impl<R: ConstInit, T> BlockingMutex<R, T> {
     /// Creates a new mutex in an unlocked state ready for use.
     #[inline]
@@ -135,7 +127,7 @@ impl<R: ScopedRawMutex, T: ?Sized> BlockingMutex<R, T> {
             // `catch_unwind` returns an `Infallible` error, which makes this statically
             // checked as impossible.
             #[cfg(feature = "std")]
-            Err(b) => resume_unwind(b),
+            Err(b) => std::panic::resume_unwind(b),
         }
     }
 
@@ -170,7 +162,7 @@ impl<R: ScopedRawMutex, T: ?Sized> BlockingMutex<R, T> {
             // `catch_unwind` returns an `Infallible` error, which makes this statically
             // checked as impossible.
             #[cfg(feature = "std")]
-            Some(Err(b)) => resume_unwind(b),
+            Some(Err(b)) => std::panic::resume_unwind(b),
         }
     }
 }
