@@ -37,6 +37,18 @@ pub use mutex_traits::{ConstInit, RawMutex, ScopedRawMutex};
 /// [`LockApiRawMutex`]: crate::raw_impls::lock_api_0_4::LockApiRawMutex
 /// [`lock_api::RawMutex`]:
 ///     https://docs.rs/lock_api/0.4.0/lock_api/trait.RawMutex.html
+///
+/// ## Unwinding
+///
+/// When the "std" feature is active, calls to [`BlockingMutex::with_lock()`] and
+/// [`BlockingMutex::try_with_lock()`] will attempt to [`catch_unwind()`], allowing
+/// the mutex to be unlocked. After the mutex has been unlocked, the unwind will be
+/// resumed with [`resume_unwind()`]. This comes with [all the caveats] that normally
+/// come with [`catch_unwind()`].
+///
+/// [`catch_unwind()`]: https://doc.rust-lang.org/stable/std/panic/fn.catch_unwind.html
+/// [`resume_unwind()`]: https://doc.rust-lang.org/stable/std/panic/fn.resume_unwind.html
+/// [all the caveats]: https://doc.rust-lang.org/stable/std/panic/fn.catch_unwind.html#notes
 pub struct BlockingMutex<R, T: ?Sized> {
     // NOTE: `raw` must be FIRST, so when using ThreadModeMutex the "can't drop in non-thread-mode" gets
     // to run BEFORE dropping `data`.
@@ -56,6 +68,8 @@ pub struct MutexGuard<'mutex, R: RawMutex, T: ?Sized> {
 unsafe impl<R: ScopedRawMutex + Send, T: ?Sized + Send> Send for BlockingMutex<R, T> {}
 unsafe impl<R: ScopedRawMutex + Sync, T: ?Sized + Send> Sync for BlockingMutex<R, T> {}
 
+/// A wrapper function for std::panic::catch_unwind. Exists so we can stub it out
+/// on non-std targets
 #[cfg(feature = "std")]
 #[inline(always)]
 fn catch_unwind<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
@@ -64,22 +78,19 @@ fn catch_unwind<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
     std::panic::catch_unwind(f)
 }
 
+/// A no-op wrapper function for no-std. We can't catch unwinds outside of std.
 #[cfg(not(feature = "std"))]
 #[inline(always)]
 fn catch_unwind<F: FnOnce() -> R, R>(f: F) -> Result<R, core::convert::Infallible> {
     Ok(f())
 }
 
+/// A wrapper function for std::panic::resume_unwind. Exists so we can stub it out
+/// on non-std targets
 #[cfg(feature = "std")]
 #[inline(always)]
 fn resume_unwind(payload: Box<dyn std::any::Any + Send>) -> ! {
     std::panic::resume_unwind(payload)
-}
-
-#[cfg(not(feature = "std"))]
-#[inline(always)]
-fn resume_unwind(_payload: core::convert::Infallible) -> ! {
-    unreachable!()
 }
 
 impl<R: ConstInit, T> BlockingMutex<R, T> {
@@ -104,10 +115,26 @@ impl<R: ScopedRawMutex, T: ?Sized> BlockingMutex<R, T> {
             let ptr = self.data.get();
             // SAFETY: Raw Mutex proves we have exclusive access to the inner data
             let inner = unsafe { &mut *ptr };
+
+            // NOTE: We attempt to catch the unwind (if the "std" feature is active)
+            // to defer the unwind until AFTER we have released the lock. Although
+            // AssertUnwindSafe does not have load-bearing SAFETY requirements, we
+            // believe this is fine because we will not observe the contents of
+            // `inner` after an unwind has begun, we will only allow the raw lock
+            // to be set back to unlocked. Once unlocked, we will resume unwinding
+            // if a panic was caught.
+            //
+            // This allows us to avoid deadlocks in testing when panics occur in the
+            // provided closure.
             catch_unwind(AssertUnwindSafe(|| f(inner)))
         });
         match res {
             Ok(g) => g,
+
+            // If we do not have the "std" feature active, the no-std verrsion of
+            // `catch_unwind` returns an `Infallible` error, which makes this statically
+            // checked as impossible.
+            #[cfg(feature = "std")]
             Err(b) => resume_unwind(b),
         }
     }
@@ -118,12 +145,33 @@ impl<R: ScopedRawMutex, T: ?Sized> BlockingMutex<R, T> {
     /// was already locked
     #[must_use]
     pub fn try_with_lock<U>(&self, f: impl FnOnce(&mut T) -> U) -> Option<U> {
-        self.raw.try_with_lock(|| {
+        let res = self.raw.try_with_lock(|| {
             let ptr = self.data.get();
             // SAFETY: Raw Mutex proves we have exclusive access to the inner data
             let inner = unsafe { &mut *ptr };
-            f(inner)
-        })
+
+            // NOTE: We attempt to catch the unwind (if the "std" feature is active)
+            // to defer the unwind until AFTER we have released the lock. Although
+            // AssertUnwindSafe does not have load-bearing SAFETY requirements, we
+            // believe this is fine because we will not observe the contents of
+            // `inner` after an unwind has begun, we will only allow the raw lock
+            // to be set back to unlocked. Once unlocked, we will resume unwinding
+            // if a panic was caught.
+            //
+            // This allows us to avoid deadlocks in testing when panics occur in the
+            // provided closure.
+            catch_unwind(AssertUnwindSafe(|| f(inner)))
+        });
+        match res {
+            None => None,
+            Some(Ok(g)) => Some(g),
+
+            // If we do not have the "std" feature active, the no-std verrsion of
+            // `catch_unwind` returns an `Infallible` error, which makes this statically
+            // checked as impossible.
+            #[cfg(feature = "std")]
+            Some(Err(b)) => resume_unwind(b),
+        }
     }
 }
 
@@ -325,5 +373,95 @@ where
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Display::fmt(&self.data, f)
+    }
+}
+
+#[cfg(feature = "std")]
+#[cfg(test)]
+mod test {
+    use core::sync::atomic::{AtomicBool, Ordering};
+
+    use crate::{raw_impls::cs::CriticalSectionRawMutex, BlockingMutex};
+
+    #[test]
+    fn unlocks_on_unwind() {
+        static MUTEX: BlockingMutex<CriticalSectionRawMutex, u64> = BlockingMutex::new(0);
+
+        // Normal access works
+        let res = std::thread::spawn(|| {
+            MUTEX.with_lock(|num| {
+                let old = *num;
+                *num += 1;
+                old
+            })
+        })
+        .join()
+        .unwrap();
+        assert_eq!(0, res);
+
+        // Panic while accessing
+        std::thread::spawn(|| {
+            MUTEX.with_lock(|_num| {
+                panic!();
+            })
+        })
+        .join()
+        .unwrap_err();
+
+        // Normal access works
+        let res = std::thread::spawn(|| {
+            MUTEX.with_lock(|num| {
+                let old = *num;
+                *num += 1;
+                old
+            })
+        })
+        .join()
+        .unwrap();
+        assert_eq!(1, res);
+    }
+
+    #[test]
+    fn try_unlocks_on_unwind() {
+        static MUTEX: BlockingMutex<CriticalSectionRawMutex, u64> = BlockingMutex::new(0);
+
+        // Normal access works
+        let res = std::thread::spawn(|| {
+            MUTEX.try_with_lock(|num| {
+                let old = *num;
+                *num += 1;
+                old
+            })
+        })
+        .join()
+        .unwrap();
+        assert_eq!(Some(0), res);
+
+        // Panic while accessing. Use a bool to ensure the closure
+        // did actually run (with access to the locked item)
+        static TRIED: AtomicBool = AtomicBool::new(false);
+        std::thread::spawn(|| {
+            MUTEX.try_with_lock(|_num| {
+                // Note that we DID try before panicking
+                TRIED.store(true, Ordering::Relaxed);
+                panic!();
+            })
+        })
+        .join()
+        .unwrap_err();
+        // make sure that we did actually obtain the lock at some point
+        assert_eq!(true, TRIED.load(Ordering::Relaxed));
+
+        // Normal access works
+        let res = std::thread::spawn(|| {
+            MUTEX.try_with_lock(|num| {
+                let old = *num;
+                *num += 1;
+                old
+            })
+        })
+        .join()
+        .unwrap();
+        assert_eq!(Some(1), res);
     }
 }
