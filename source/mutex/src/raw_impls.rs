@@ -5,6 +5,68 @@
 //!
 //! [`ScopedRawMutex`]: crate::ScopedRawMutex
 //! [`RawMutex`]: crate::RawMutex
+//!
+//! ## Which impl should I use?
+//!
+//! This module contains different implementations based on their capabilities and what
+//! features or dependencies they require.
+//!
+//! ### `local` impl
+//!
+//! The [`local`] module implements a mutex that acts similarly to a `RefCell`, and is
+//! useful when a type requires a [`ScopedRawMutex`], but the item is only ever used locally
+//! within the same thread or task. This implementation does NOT impl `Sync`, so it cannot
+//! be placed in a static. Because this property is checkable at compile time, this mutex
+//! has the lowest overall cost to lock/unlock.
+//!
+//! This module requires no features to be enabled.
+//!
+//! ### `single_core_thread_mode` impl
+//!
+//! The [`single_core_thread_mode`] module implements a mutex that DOES impl `Sync`, but
+//! only allows access when NOT in interrupt mode, e.g. "thread mode" on cortex-m devices.
+//! This property is useful when you'd like to place a mutex in a static for lifetime or
+//! accessibility reasons, but don't want to require a critical section to access, if all
+//! access is done outside of interrupt context. This requires a runtime check, making it
+//! a bit less efficient than the [`local`] impl, but less costly or disruptive than
+//! taking a critical section.
+//!
+//! This impl is currently only usable on bare metal cortex-m targets, as it checks the
+//! `ICSR.VECTACTIVE` field at runtime. PRs to allow similar checks for other architectures
+//! are welcome. This impl ALSO requires the `impl-unsafe-cortex-m-single-core` feature to
+//! be active, which should ONLY be enabled if your target is single core or is only being
+//! used in a single core configuration, otherwise both cores could unsoundly gain access
+//! at the same time.
+//!
+//! ### `cs` impl
+//!
+//! The [`cs`] module implements a mutex that DOES impl `Sync`, and provides exclusive
+//! access using a critical section via the `critical-section` crate. The `critical-section`
+//! crate allows users to define how a critical section can be obtained: on single core embedded
+//! platforms, this usually involves disabling interrupts for the duration of the critical
+//! section. On multicore embedded platforms, this usually involves using some hardware
+//! synchronization utility, for example using the "Spinlock" peripheral on RP2xxx targets.
+//! On desktop/`std` platforms, this typically involves using a `std` Mutex from the operating
+//! system, which will prevent concurrent access.
+//!
+//! This impl can be used in the widest variety of cases, but generally has the highest cost
+//! or largest impact to scheduling/latency. That being said: simply taking or releasing critical
+//! sections is rarely an expensive operation (only a few cycles on embedded targets), however if an
+//! expensive operation is done WHILE holding the critical section, latency of servicing interrupts
+//! or other threads may be impacted.
+//!
+//! This impl requires the `impl-critical-section` feature to be active, and requires that a
+//! `critical-section` implementation has been provided. If both the `std` and `impl-critical-section`
+//! features of this crate, the `critical-section/std` feature is enabled, fulfilling this requirement
+//! on std targets. For embedded targets, `critical-section` impls are usually provided by your
+//! architecture crate (e.g. `cortex-m` for single core targets) or HAL crate (e.g. `embassy-rp`
+//! for multi-core targets).
+//!
+//! ### `lock_api_0_4`
+//!
+//! The `lock_api_0_4` module implements a mutex based on the `lock_api` crate. This is provided
+//! for compatibility if your system is using mutexes based on the `lock_api`/`parking_lot`
+//! crates. This is uncommon for embedded targets.
 #![allow(clippy::new_without_default)]
 #![allow(clippy::declare_interior_mutable_const)]
 
@@ -89,7 +151,7 @@ pub mod local {
     #[cfg_attr(feature = "fmt", derive(Debug))]
     pub struct LocalRawMutex {
         taken: AtomicBool,
-        /// Prevent this from being sync or send
+        /// Prevent this from being sync
         _phantom: PhantomData<*mut ()>,
     }
 
@@ -113,7 +175,7 @@ pub mod local {
         #[inline]
         #[must_use]
         fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
-            // NOTE: separated load/stores are acceptable as we are !Send and !Sync,
+            // NOTE: separated load/stores are acceptable as we are !Sync,
             // meaning that we can only be accessed within a single thread
             if self.taken.load(Ordering::Relaxed) {
                 return None;
