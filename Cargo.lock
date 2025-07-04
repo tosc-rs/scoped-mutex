@@ -26,7 +26,7 @@ dependencies = [
 
 [[package]]
 name = "mutex"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "critical-section",
  "lock_api",
@@ -35,7 +35,7 @@ dependencies = [
 
 [[package]]
 name = "mutex-traits"
-version = "1.0.0"
+version = "1.0.1"
 
 [[package]]
 name = "scopeguard"
