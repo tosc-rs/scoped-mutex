@@ -109,7 +109,6 @@ pub mod cs {
 
     unsafe impl ScopedRawMutex for CriticalSectionRawMutex {
         #[inline]
-        #[must_use]
         fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
             critical_section::with(|_| {
                 // NOTE: separated load/stores are acceptable as we are in
@@ -173,7 +172,6 @@ pub mod local {
 
     unsafe impl ScopedRawMutex for LocalRawMutex {
         #[inline]
-        #[must_use]
         fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
             // NOTE: separated load/stores are acceptable as we are !Sync,
             // meaning that we can only be accessed within a single thread
@@ -245,7 +243,7 @@ pub mod single_core_thread_mode {
             }
             // NOTE: separated load/stores are acceptable as we checked we are only
             // accessed from a single thread (checked above)
-            assert!(self.taken.load(Ordering::Relaxed));
+            assert!(!self.taken.load(Ordering::Relaxed));
             self.taken.store(true, Ordering::Relaxed);
             let ret = f();
             self.taken.store(false, Ordering::Relaxed);
