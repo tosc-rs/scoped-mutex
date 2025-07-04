@@ -3,16 +3,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 
-/// Const Init Trait
-///
-/// This trait is intended for use when implementers of [`ScopedRawMutex`] that can
-/// be constructed in const context, e.g. for placing in a `static`
-pub trait ConstInit {
-    /// Create a new instance.
-    ///
-    /// This is a const instead of a method to allow creating instances in const context.
-    const INIT: Self;
-}
+pub use const_init::ConstInit;
 
 /// Raw scoped mutex trait.
 ///
