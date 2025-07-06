@@ -21,6 +21,28 @@ jobs:
       - name: cargo clippy
         run: cargo clippy -q --message-format=json | cargo-action-fmt
 
+  check-nostd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            override: true
+
+      # Install thumb target
+      - name: Install Thumb Target
+        run: rustup target add thumbv6m-none-eabi
+
+      # check with default features
+      - name: cargo check (default)
+        run: cargo check --all --target=thumbv6m-none-eabi
+
+      # Some behavior is std-feature specific, check with that feature active
+      - name: cargo check (single core)
+        run: cargo check --all --target=thumbv6m-none-eabi --features=impl-unsafe-cortex-m-single-core
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -85,6 +107,7 @@ jobs:
     name: "all systems go!"
     runs-on: ubuntu-latest
     needs:
+      - check-nostd
       - rustfmt
       - rustdoc
       - clippy
