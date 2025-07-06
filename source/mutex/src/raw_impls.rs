@@ -236,7 +236,6 @@ pub mod single_core_thread_mode {
 
     unsafe impl ScopedRawMutex for ThreadModeRawMutex {
         #[inline]
-        #[must_use]
         fn try_with_lock<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
             if !in_thread_mode() {
                 return None;
@@ -255,7 +254,7 @@ pub mod single_core_thread_mode {
             // In a thread-mode only mutex, it is not possible for another holder
             // of this mutex to release, which means we have certainly
             // reached deadlock if the lock was already locked.
-            self.try_lock(f)
+            self.try_with_lock(f)
                 .expect("Deadlocked or attempted to access outside of thread mode")
         }
 
